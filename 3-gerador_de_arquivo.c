@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
 
     puts("GERANDO ARQUIVO DE TESTE...");
     FILE *arquivo;
-    arquivo = fopen("registro.txt", "a");
+    arquivo = fopen("registro.txt", "w");
     if (arquivo == NULL) {
         puts(" > ERRO: Falha ao criar o arquivo.");
         return -1;
