@@ -2,8 +2,10 @@
 #include <time.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MIN_PARAMETROS 14
+#define POSICAO_INICIAL_SENSORES 13
 
 #define MIN_DIA 1
 #define MAX_DIAS_MES_31 31
@@ -37,15 +39,23 @@ typedef struct {
     int segundo;
 } Data_E_Hora;
 
+typedef struct {
+    char nome_sensor[5];
+    char tipo[7];
+} Sensor;
 
 bool sao_data_e_hora_validos(Data_E_Hora dh);
 bool eh_ano_bissexto(int ano);
 bool eh_intervalo_valido(time_t ts_inicial, time_t ts_final);
 time_t converter_para_timestamp(Data_E_Hora dh);
+void escrever_no_arquivo(FILE *arq, time_t ts, char* sensor, char* valor);
+time_t gerar_timestamp_aleatorio(time_t timestamp_inicial, time_t timestamp_final);
+char* gerar_valor_aleatorio(char* tipo_sensor);
 
 int main(int argc, char* argv[]) {
-    if (argc < 12) {
-        puts(" > ERRO: Quantidade invalida de parametros");
+    srand(time(0));
+    if (argc < MIN_PARAMETROS) {
+        puts(" > ERRO: Quantidade invalida de parametros.");
         return -1;
     }
 
@@ -68,11 +78,11 @@ int main(int argc, char* argv[]) {
     };
 
     if (sao_data_e_hora_validos(dh_inicial) != true) {
-        puts(" > ERRO: Data ou hora inicial invalida");
+        puts(" > ERRO: Data ou hora inicial invalida.");
         return -1;
     }
     if (sao_data_e_hora_validos(dh_final) != true) {
-        puts(" > ERRO: Data ou hora final invalida");
+        puts(" > ERRO: Data ou hora final invalida.");
         return -1;
     }
 
@@ -80,10 +90,46 @@ int main(int argc, char* argv[]) {
     time_t timestamp_final = converter_para_timestamp(dh_final);
 
     if (!eh_intervalo_valido(timestamp_inicial, timestamp_final)) {
-        puts(" > ERRO: A data final nao pode ser antes da data inicial");
+        puts(" > ERRO: A data final nao pode ser antes da data inicial.");
         return -1;
     }
 
+    int qntd_sensores_e_tipos = argc - POSICAO_INICIAL_SENSORES;
+    if (qntd_sensores_e_tipos%2 != 0) {
+        puts(" > ERRO: Cada sensor deve ter um tipo correspondente.");
+        return -1;
+    }
+    int qntd_sensores = qntd_sensores_e_tipos / 2;
+    Sensor sensores[qntd_sensores];
+    for (int i = 0 ; i < qntd_sensores ; i++) {
+        strncpy(sensores[i].nome_sensor, argv[POSICAO_INICIAL_SENSORES + 2*i], 4);
+        sensores[i].nome_sensor[4] = '\0';
+        strncpy(sensores[i].tipo, argv[POSICAO_INICIAL_SENSORES + 2*i + 1], 6);
+        sensores[i].tipo[6] = '\0';
+        if (strcmp(sensores[i].tipo, "FLOAT") != 0 &&
+            strcmp(sensores[i].tipo, "DOUBLE") != 0 &&
+            strcmp(sensores[i].tipo, "INT") != 0) {
+            printf(" > ERRO: O tipo %s eh invalido. Utilize FLOAT, DOUBLE ou INT.\n", sensores[i].tipo);
+            exit(-1);
+        }
+    }
+
+    FILE *arquivo;
+    arquivo = fopen("registro.txt", "a");
+    if (arquivo == NULL) {
+        puts(" > ERRO: Falha ao criar o arquivo.");
+        return -1;
+    }
+
+    for (int i = 0 ; i < qntd_sensores ; i++) {
+        for (int j = 0 ; j < 5 ; j++ ) {
+            time_t ts_aleatorio = gerar_timestamp_aleatorio(timestamp_inicial, timestamp_final);
+            char* nome_sensor = sensores[i].nome_sensor;
+            // char* valor = gerar_valor_aleatorio(sensores[i].tipo);
+            escrever_no_arquivo(arquivo, ts_aleatorio, nome_sensor, "0");
+        }
+    }
+    fclose(arquivo);
 }
 
 bool sao_data_e_hora_validos(Data_E_Hora dh) {
@@ -144,3 +190,27 @@ time_t converter_para_timestamp(Data_E_Hora dh) {
     }
 }
 
+void escrever_no_arquivo(FILE *arq, time_t ts, char* sensor, char* valor) {
+    fprintf(arq, "%d %s %s\n", ts, sensor, valor);
+    return;
+}
+
+time_t gerar_timestamp_aleatorio(time_t timestamp_inicial, time_t timestamp_final) {
+    time_t timestamp_aleatorio = timestamp_inicial + rand() % (timestamp_final - timestamp_inicial + 1);
+    return timestamp_aleatorio;
+}
+
+char* gerar_valor_aleatorio(char* tipo_sensor) {
+    if (strcmp(tipo_sensor, "FLOAT") == 0) {
+        // return
+    } 
+    if (strcmp(tipo_sensor, "DOUBLE") == 0) {
+        // return
+    }
+    if (strcmp(tipo_sensor, "INT") == 0) {
+        // return
+    }
+    printf(" > ERRO: O tipo %s eh invalido. Utilize FLOAT, DOUBLE ou INT.\n", tipo_sensor);
+    exit(-1);
+    
+}
