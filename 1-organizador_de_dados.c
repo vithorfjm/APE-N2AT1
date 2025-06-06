@@ -58,13 +58,24 @@ int main(int argc, char* argv[]) {
 
     
     int qntd_linhas = contar_linhas_arquivo(arquivo);
+    printf("[ ! ] Processando arquivo com %d dados diversos...\n", qntd_linhas);
     Sensor sensores[qntd_linhas];
     char lista_sensores_distintos[MAX_SENSORES][MAX_TAMANHO_NOME_SENSOR];
     int qntd_sensores_distintos = processar_entrada(arquivo, qntd_linhas, sensores, lista_sensores_distintos);
     fclose(arquivo);
+    Sleep(500);
+    printf("[ ! ] Foram encontraas informacoes provenientes de %d sensores:\n", qntd_sensores_distintos);
+    for (int i = 0; i < qntd_sensores_distintos ; i++) {
+        Sleep(300);
+        printf(" > %s\n", lista_sensores_distintos[i]);
+    } 
     ordenar_sensores(sensores, qntd_linhas);
+    Sleep(500);
+    puts("[ ! ] Ordenando sensores com base na data...");
+    Sleep(500);
+    puts("[ ! ] Separando sensores em arquivos...");
     gerar_arquivos(sensores, qntd_linhas, lista_sensores_distintos, qntd_sensores_distintos);
-
+    puts("[ ! ] Arquivos gerados com sucesso!");
 
 }
 
