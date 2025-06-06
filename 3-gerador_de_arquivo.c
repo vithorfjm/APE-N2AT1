@@ -30,6 +30,11 @@
 #define SET 9
 #define NOV 11
 
+#define MIN_RAND_INT 10
+#define MAX_RAND_INT 1000
+
+#define QNTD_REGISTROS 2000
+
 typedef struct {
     int dia;
     int mes;
@@ -48,9 +53,8 @@ bool sao_data_e_hora_validos(Data_E_Hora dh);
 bool eh_ano_bissexto(int ano);
 bool eh_intervalo_valido(time_t ts_inicial, time_t ts_final);
 time_t converter_para_timestamp(Data_E_Hora dh);
-void escrever_no_arquivo(FILE *arq, time_t ts, char* sensor, char* valor);
 time_t gerar_timestamp_aleatorio(time_t timestamp_inicial, time_t timestamp_final);
-char* gerar_valor_aleatorio(char* tipo_sensor);
+void escrever_valor_aleatorio(FILE *arq, time_t ts, char* sensor, char* tipo_sensor);
 
 int main(int argc, char* argv[]) {
     srand(time(0));
@@ -108,12 +112,14 @@ int main(int argc, char* argv[]) {
         sensores[i].tipo[6] = '\0';
         if (strcmp(sensores[i].tipo, "FLOAT") != 0 &&
             strcmp(sensores[i].tipo, "DOUBLE") != 0 &&
+            strcmp(sensores[i].tipo, "BOOL") != 0 &&
             strcmp(sensores[i].tipo, "INT") != 0) {
-            printf(" > ERRO: O tipo %s eh invalido. Utilize FLOAT, DOUBLE ou INT.\n", sensores[i].tipo);
+            printf(" > ERRO: O tipo %s eh invalido. Utilize FLOAT, DOUBLE, INT ou BOOL.\n", sensores[i].tipo);
             exit(-1);
         }
     }
 
+    puts("GERANDO ARQUIVO DE TESTE...");
     FILE *arquivo;
     arquivo = fopen("registro.txt", "a");
     if (arquivo == NULL) {
@@ -122,14 +128,14 @@ int main(int argc, char* argv[]) {
     }
 
     for (int i = 0 ; i < qntd_sensores ; i++) {
-        for (int j = 0 ; j < 5 ; j++ ) {
+        for (int j = 0 ; j < QNTD_REGISTROS ; j++ ) {
             time_t ts_aleatorio = gerar_timestamp_aleatorio(timestamp_inicial, timestamp_final);
             char* nome_sensor = sensores[i].nome_sensor;
-            // char* valor = gerar_valor_aleatorio(sensores[i].tipo);
-            escrever_no_arquivo(arquivo, ts_aleatorio, nome_sensor, "0");
+            escrever_valor_aleatorio(arquivo, ts_aleatorio, nome_sensor, sensores[i].tipo);
         }
     }
     fclose(arquivo);
+    printf("Arquivo gerado com sucesso. %d dados foram inseridos", QNTD_REGISTROS * qntd_sensores);
 }
 
 bool sao_data_e_hora_validos(Data_E_Hora dh) {
@@ -190,27 +196,34 @@ time_t converter_para_timestamp(Data_E_Hora dh) {
     }
 }
 
-void escrever_no_arquivo(FILE *arq, time_t ts, char* sensor, char* valor) {
-    fprintf(arq, "%d %s %s\n", ts, sensor, valor);
-    return;
-}
-
 time_t gerar_timestamp_aleatorio(time_t timestamp_inicial, time_t timestamp_final) {
     time_t timestamp_aleatorio = timestamp_inicial + rand() % (timestamp_final - timestamp_inicial + 1);
     return timestamp_aleatorio;
 }
 
-char* gerar_valor_aleatorio(char* tipo_sensor) {
+void escrever_valor_aleatorio(FILE *arq, time_t ts, char* sensor, char* tipo_sensor) {
+    fprintf(arq, "%d %s ", ts, sensor);
+    
     if (strcmp(tipo_sensor, "FLOAT") == 0) {
-        // return
-    } 
+        float valor = (float)(rand() % 1000) / 10.0;
+        fprintf(arq, "%.2f\n", valor);
+        return;
+    }
     if (strcmp(tipo_sensor, "DOUBLE") == 0) {
-        // return
+        double valor = (double)(rand() % 1000) / 10.0;
+        fprintf(arq, "%.3lf\n", valor);
+        return;
     }
     if (strcmp(tipo_sensor, "INT") == 0) {
-        // return
+        int valor = rand() % (MAX_RAND_INT - MIN_RAND_INT + 1) + MIN_RAND_INT;
+        fprintf(arq, "%d\n", valor);
+        return;
+    }
+    if (strcmp(tipo_sensor, "BOOL") == 0) {
+        int valor = rand() % 2;
+        fprintf(arq, "%d\n", valor);
+        return;
     }
     printf(" > ERRO: O tipo %s eh invalido. Utilize FLOAT, DOUBLE ou INT.\n", tipo_sensor);
     exit(-1);
-    
 }
