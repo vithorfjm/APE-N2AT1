@@ -3,9 +3,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 
 #define TAMANHO_BUFFER 65536
-#define MAX_TAMANHO_NOME_SENSOR 4
+#define MAX_TAMANHO_NOME_SENSOR 5
 #define MAX_SENSORES 10
 
 #define MAX_LEN_NOME_ARQUIVO 30
@@ -32,10 +33,11 @@ typedef struct {
 } Sensor;
 
 int contar_linhas_arquivo(FILE* arq);
-int processar_entrada(FILE* arq, int qntd_linhas, Sensor sensores[]);
+int processar_entrada(FILE* arq, int qntd_linhas, Sensor sensores[], char lista_sensores_distintos[][MAX_TAMANHO_NOME_SENSOR]);
 Sensor definir_tipo_e_valor(char* tipo, Sensor sensor);
 void ordenar_sensores(Sensor sensores[], int qnt_registros);
 int comparar_timestamp(const void *a, const void *b);
+void gerar_arquivos(Sensor sensores[], int qnt_registros, char lista_sensores_distintos[][MAX_TAMANHO_NOME_SENSOR], int qntd_sensores_distintos);
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -57,9 +59,11 @@ int main(int argc, char* argv[]) {
     
     int qntd_linhas = contar_linhas_arquivo(arquivo);
     Sensor sensores[qntd_linhas];
-    int qntd_sensores_distintos = processar_entrada(arquivo, qntd_linhas, sensores);
+    char lista_sensores_distintos[MAX_SENSORES][MAX_TAMANHO_NOME_SENSOR];
+    int qntd_sensores_distintos = processar_entrada(arquivo, qntd_linhas, sensores, lista_sensores_distintos);
     fclose(arquivo);
     ordenar_sensores(sensores, qntd_linhas);
+    gerar_arquivos(sensores, qntd_linhas, lista_sensores_distintos, qntd_sensores_distintos);
 
 
 }
@@ -85,9 +89,8 @@ int contar_linhas_arquivo(FILE* arq) {
     return contador;
 }
 
-int processar_entrada(FILE* arq, int qntd_linhas, Sensor sensores[]) {
+int processar_entrada(FILE* arq, int qntd_linhas, Sensor sensores[], char lista_sensores_distintos[][MAX_TAMANHO_NOME_SENSOR]) {
     rewind(arq);
-    char sensores_distintos[MAX_SENSORES][MAX_LEN_NOME_ARQUIVO];
     int qntd_sensores_distintos = 0;
     char nome_sensor[5];
     time_t timestamp; 
@@ -108,14 +111,13 @@ int processar_entrada(FILE* arq, int qntd_linhas, Sensor sensores[]) {
         
         bool eh_novo = true;
 
-        for (int j = 0 ; j < qntd_sensores_distintos ; j++) {
-            if (strcmp(nome_sensor, sensores_distintos[j]) == 0) {
+        for (int j = 0 ; j < MAX_SENSORES ; j++) {
+            if (strcmp(nome_sensor, lista_sensores_distintos[j]) == 0) {
                 eh_novo = false;
-                break;
             }
         }
         if (eh_novo) {
-            strcpy(sensores_distintos[qntd_sensores_distintos], nome_sensor);
+            strcpy(lista_sensores_distintos[qntd_sensores_distintos], nome_sensor);
             qntd_sensores_distintos++;
         }
 
@@ -142,7 +144,7 @@ Sensor definir_tipo_e_valor(char* str_valor, Sensor sensor) {
                 sensor.tipo = DUPLO;
                 char *end;
                 double valor = strtod(str_valor, &end);
-                sensor.valor.flutuante = valor;
+                sensor.valor.duplo = valor;
                 return sensor;
             }
             else {
@@ -174,4 +176,41 @@ int comparar_timestamp(const void *a, const void *b) {
     if (sensor_a->timestamp < sensor_b->timestamp) return -1;
     if (sensor_a->timestamp > sensor_b->timestamp) return 1;
     return 0;
+}
+
+void gerar_arquivos(Sensor sensores[], int qntd_registros, char lista_sensores_distintos[][MAX_TAMANHO_NOME_SENSOR], int qntd_sensores_distintos) {
+    for (int i = 0 ; i < qntd_registros ; i++) {
+        char nome_arquivo[MAX_TAMANHO_NOME_SENSOR];
+        strcpy(nome_arquivo, sensores[i].id_sensor);
+        strcat(nome_arquivo, ".txt");
+        FILE *arq = fopen(nome_arquivo, "a");
+        for (int j = 0 ; j < qntd_sensores_distintos ; j++) {
+            if (strcmp(sensores[i].id_sensor, lista_sensores_distintos[j]) == 0) {
+                fprintf(arq, "%d %s ", sensores[i].timestamp, sensores[i].id_sensor);
+                switch (sensores[i].tipo) {
+                    case FLUTUANTE:
+                        fprintf(arq, "%.2f\n", sensores[i].valor.flutuante);
+                        break;
+                    case DUPLO:
+                        fprintf(arq, "%.3f\n", sensores[i].valor.duplo);
+                        break;
+                    case INTEIRO:
+                        fprintf(arq, "%d\n", sensores[i].valor.inteiro);
+                        break;
+                    case BOOLEANO:
+                        fprintf(arq, "%d\n", sensores[i].valor.booleano);
+                        break;
+                    default:
+                        puts(" > ERRO: Falha na escrita de arquivo.");
+                        exit(-1);
+                }
+                break;
+            }
+        }
+        fclose(arq);
+    }
+}
+
+void escrever_no_arquivo(char nome_sensor) {
+    
 }
