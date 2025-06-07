@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 
 #define MIN_PARAMETROS 14
 #define POSICAO_INICIAL_SENSORES 13
@@ -119,7 +120,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    puts("GERANDO ARQUIVO DE TESTE...");
+    puts("[ ! ] GERANDO ARQUIVO DE TESTE...");
     FILE *arquivo;
     arquivo = fopen("registro.txt", "w");
     if (arquivo == NULL) {
@@ -135,7 +136,8 @@ int main(int argc, char* argv[]) {
         }
     }
     fclose(arquivo);
-    printf("Arquivo gerado com sucesso. %d dados foram inseridos", QNTD_REGISTROS * qntd_sensores);
+    Sleep(500);
+    printf("[ ! ] Arquivo gerado com sucesso.\n[ ! ] %d dados foram inseridos no registro.", QNTD_REGISTROS * qntd_sensores);
 }
 
 bool sao_data_e_hora_validos(Data_E_Hora dh) {
@@ -197,7 +199,9 @@ time_t converter_para_timestamp(Data_E_Hora dh) {
 }
 
 time_t gerar_timestamp_aleatorio(time_t timestamp_inicial, time_t timestamp_final) {
-    time_t timestamp_aleatorio = timestamp_inicial + rand() % (timestamp_final - timestamp_inicial + 1);
+    unsigned int intervalo = (unsigned int)(timestamp_final - timestamp_inicial);
+    unsigned int aleatorio_32 = ((unsigned int)rand() << 16) | (unsigned int)rand();
+    time_t timestamp_aleatorio = timestamp_inicial + (aleatorio_32 % intervalo);
     return timestamp_aleatorio;
 }
 
